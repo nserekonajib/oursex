@@ -4,28 +4,28 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
-import pytz  # for timezone support
+import pytz
 
+# --- Flask App Setup ---
 app = Flask(__name__)
 CORS(app)
 
 # --- Configuration ---
 email_sender = 'nserekonajib3@gmail.com'
-email_password = 'gvai uawu evwn hqfr'  # Gmail App Password (DO NOT SHARE PUBLICLY)
+email_password = 'gvai uawu evwn hqfr'  # Gmail App Password (NEVER expose in public repo)
 recipients = ['nclenza@gmail.com', 'zayyanclenza@gmail.com']
 
 wife_name = "Mrs. Nsereko Nabirah"
 your_name = "Nsereko Najib"
-
 cycle_length = 28
 period_length = 5
-period_start_date = datetime(2025, 7, 22)  # Update manually when her period starts
+period_start_date = datetime(2025, 7, 22)  # Manually update on new cycle
 
-# Set timezone to Uganda
+# --- Timezone Setup ---
 uganda_tz = pytz.timezone("Africa/Kampala")
 
 
-# --- Get Cycle Info ---
+# --- Cycle Info Logic ---
 def get_cycle_info():
     today = datetime.now(uganda_tz)
     days_since_period = (today - period_start_date).days
@@ -48,15 +48,15 @@ def get_cycle_info():
         note = "Low chance of pregnancy, but we’re still going to have our special love."
 
     return {
+        "today": today.strftime("%A, %d %B %Y"),
         "day_in_cycle": day_in_cycle + 1,
         "days_until_next": days_until_next,
         "status": status,
-        "note": note,
-        "today": today.strftime("%A, %d %B %Y")
+        "note": note
     }
 
 
-# --- Create HTML Email Body ---
+# --- Create Email Content ---
 def create_email_body(info):
     return f"""
     <html>
@@ -106,6 +106,6 @@ def trigger_email():
         return jsonify({"status": "error", "message": f"Failed to send email: {result}"}), 500
 
 
-# --- Run App ---
+# --- Run Server ---
 if __name__ == '__main__':
     app.run(debug=True)
