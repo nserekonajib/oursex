@@ -4,26 +4,30 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
+import pytz  # for timezone support
 
 app = Flask(__name__)
 CORS(app)
 
 # --- Configuration ---
 email_sender = 'nserekonajib3@gmail.com'
-email_password = 'gvai uawu evwn hqfr'  # Use Gmail App Password
-recipients = ['nclenza@gmail.com', 'zayyanclenza@gmail.com']  # 💌 Send to both
+email_password = 'gvai uawu evwn hqfr'  # Gmail App Password (DO NOT SHARE PUBLICLY)
+recipients = ['nclenza@gmail.com', 'zayyanclenza@gmail.com']
 
 wife_name = "Mrs. Nsereko Nabirah"
 your_name = "Nsereko Najib"
 
 cycle_length = 28
 period_length = 5
-period_start_date = datetime(2025, 7, 22)  # Start of current cycle
+period_start_date = datetime(2025, 7, 22)  # Update manually when her period starts
+
+# Set timezone to Uganda
+uganda_tz = pytz.timezone("Africa/Kampala")
 
 
 # --- Get Cycle Info ---
 def get_cycle_info():
-    today = datetime.now()
+    today = datetime.now(uganda_tz)
     days_since_period = (today - period_start_date).days
     day_in_cycle = days_since_period % cycle_length
     days_until_next = cycle_length - day_in_cycle
@@ -35,7 +39,7 @@ def get_cycle_info():
 
     if is_period_day:
         status = "Menstruation (Period Ongoing)"
-        note = "We are not having sex today my soulmate."
+        note = "We are not having sex today, my soulmate."
     elif is_fertile_day:
         status = "Fertile Day 🌸"
         note = "My love, today we can have a baby. Let's make special love."
@@ -71,14 +75,14 @@ def create_email_body(info):
     """
 
 
-# --- Send Email to Multiple Recipients ---
+# --- Send Email ---
 def send_email():
     info = get_cycle_info()
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "💌 Daily Cycle Update"
     msg["From"] = email_sender
-    msg["To"] = ", ".join(recipients)  # Display only (not used for delivery)
+    msg["To"] = ", ".join(recipients)
 
     html = create_email_body(info)
     msg.attach(MIMEText(html, "html"))
@@ -102,5 +106,6 @@ def trigger_email():
         return jsonify({"status": "error", "message": f"Failed to send email: {result}"}), 500
 
 
+# --- Run App ---
 if __name__ == '__main__':
     app.run(debug=True)
