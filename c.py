@@ -131,6 +131,4 @@ def trigger_email():
     else:
         return jsonify({"status": "error", "message": f"Failed to send email: {result}"}), 500
 
-# --- Run Server ---
-if __name__ == '__main__':
-    app.run(debug=True)
+
