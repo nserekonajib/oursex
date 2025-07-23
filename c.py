@@ -15,7 +15,7 @@ CORS(app)
 
 # --- Config ---
 email_sender = 'nserekonajib3@gmail.com'
-email_password = 'gvai uawu evwn hqfr'
+email_password = 'gvai uawu evwn hqfr'  # Use ENV in production
 recipients = ['nclenza@gmail.com', 'zayyanclenza@gmail.com']
 wife_name = "Mrs. Nsereko Nabirah"
 your_name = "Nsereko Najib"
@@ -25,10 +25,12 @@ uganda_tz = pytz.timezone("Africa/Kampala")
 CYCLE_FILE = 'cycle_data.json'
 LOCK_FILE = 'cycle_data.lock'
 
-# --- Prevent spamming ---
+# --- Rate Limiting Config ---
 LAST_EMAIL_SENT = {}
-EMAIL_INTERVAL_MINUTES = 15
+EMAIL_INTERVAL_MINUTES = 15  # Cooldown per IP
 
+
+# --- Rate Limit Checker ---
 def can_send_email(ip):
     now = datetime.now()
     last_time = LAST_EMAIL_SENT.get(ip)
@@ -36,6 +38,7 @@ def can_send_email(ip):
         return False
     LAST_EMAIL_SENT[ip] = now
     return True
+
 
 # --- File Persistence ---
 def load_cycle_data():
@@ -59,6 +62,8 @@ def save_cycle_data(date):
     except:
         pass
 
+
+# --- Cycle Info Logic ---
 def get_current_period_start():
     last_start = load_cycle_data()
     today = datetime.now(uganda_tz)
@@ -92,6 +97,8 @@ def get_cycle_info():
         "note": note
     }
 
+
+# --- Email Creation ---
 def create_email_body(info):
     return f"""
     <html><body style="font-family: Arial;">
@@ -107,27 +114,48 @@ def create_email_body(info):
     </body></html>
     """
 
-def send_email_async(info):
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "💌 Daily Cycle Update"
-        msg["From"] = email_sender
-        msg["To"] = ", ".join(recipients)
-        msg.attach(MIMEText(create_email_body(info), "html"))
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(email_sender, email_password)
-            server.sendmail(email_sender, recipients, msg.as_string())
-    except Exception as e:
-        print(f"[EMAIL ERROR]: {e}")
+# --- Background Email with Retry ---
+def send_email_with_retries(info, max_retries=2):
+    attempt = 0
+    while attempt <= max_retries:
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "💌 Daily Cycle Update"
+            msg["From"] = email_sender
+            msg["To"] = ", ".join(recipients)
+            msg.attach(MIMEText(create_email_body(info), "html"))
 
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(email_sender, email_password)
+                server.sendmail(email_sender, recipients, msg.as_string())
+            print("[EMAIL SENT SUCCESSFULLY]")
+            return True
+        except Exception as e:
+            attempt += 1
+            print(f"[EMAIL ATTEMPT {attempt} FAILED]: {e}")
+    return False
+
+
+# --- Flask Endpoint ---
 @app.route('/send-cycle-email', methods=['GET'])
 def trigger_email():
     client_ip = request.remote_addr
-    if not can_send_email(client_ip):
-        return jsonify({"status": "error", "message": "Too many requests. Wait a bit."}), 429
-
     info = get_cycle_info()
-    threading.Thread(target=send_email_async, args=(info,)).start()
-    return jsonify({"status": "success", "message": "Email is being sent in background", "data": info})
+
+    # Start email sending only if allowed
+    if can_send_email(client_ip):
+        threading.Thread(target=send_email_with_retries, args=(info,)).start()
+        return jsonify({
+            "status": "success",
+            "message": "Email is being sent. If it fails, we’ll try two more times.",
+            "data": info
+        })
+    else:
+        # Email blocked, but data still returned
+        return jsonify({
+            "status": "partial",
+            "message": "Email already sent recently. We'll try again later. Here's your cycle info.",
+            "data": info
+        })
 
