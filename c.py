@@ -16,7 +16,7 @@ CORS(app)
 # --- Config ---
 email_sender = 'nserekonajib3@gmail.com'
 email_password = 'gvai uawu evwn hqfr'  # Use ENV in production
-recipients = ['nclenza@gmail.com', 'zayyanclenza@gmail.com']
+recipients = ['nclenza@gmail.com', 'Bintali613@gmail.com']
 wife_name = "Mrs. Nsereko Nabirah"
 your_name = "Nsereko Najib"
 cycle_length = 28
