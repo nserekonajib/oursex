@@ -50,7 +50,7 @@ def load_cycle_data():
                     return datetime.fromisoformat(data["last_period_start"])
     except:
         pass
-    start = datetime(2025, 7, 22, tzinfo=uganda_tz)
+    start = datetime(2025, 7, 21, tzinfo=uganda_tz)
     save_cycle_data(start)
     return start
 
